@@ -13,15 +13,14 @@ const createProduct = async (req, res) => {
         const { productImage } = req.files;
 
         // Check required fields
-        if (!productName || !productPrice || !productDescription || !productImage) {
+        if (!productName || !productPrice || !productDescription || !productCategory || !productImage) {
             return res.status(400).json({
                 success: false,
                 message: "Please fill all the required fields",
             });
         }
 
-        let categories = Array.isArray(productCategory) ? productCategory : [productCategory];
-        categories = categories.map(category => new mongoose.Types.ObjectId(category));
+        const category = new mongoose.Types.ObjectId(productCategory);
 
         const uploadedImage = await cloudinary.uploader.upload(productImage.path, {
             folder: "products",
@@ -33,7 +32,7 @@ const createProduct = async (req, res) => {
             productName,
             productPrice,
             productDescription,
-            productCategory: categories,
+            productCategory: category,
             productImageUrl: uploadedImage.secure_url,
         });
         await newProduct.save();
@@ -81,6 +80,7 @@ const getProducts = async (req, res) => {
 };
 
 
+
 const getSingleProduct = async (req, res) => {
     const productId = req.params.id;
     try {
@@ -106,7 +106,6 @@ const getSingleProduct = async (req, res) => {
 };
 
 const updateProduct = async (req, res) => {
-    // Destructuring data from req.body and req.files
     const {
         productName,
         productPrice,
@@ -114,8 +113,8 @@ const updateProduct = async (req, res) => {
         productCategory,
     } = req.body;
     const { productImage } = req.files;
-    // Validate required fields
-    if (!productName || !productPrice || !productDescription || !productImage) {
+
+    if (!productName || !productPrice || !productDescription || !productCategory) {
         return res.status(400).json({
             success: false,
             message: "Required fields are missing.",
@@ -123,19 +122,16 @@ const updateProduct = async (req, res) => {
     }
 
     try {
-        let categories = Array.isArray(productCategory) ? productCategory : [productCategory];
-        categories = categories.map((category) => new mongoose.Types.ObjectId(category));
+        const category = new mongoose.Types.ObjectId(productCategory);
 
         let updatedData = {
             productName,
             productPrice,
             productDescription,
-            productCategory: categories,
+            productCategory: category,
         };
 
-        // Case: If there is an image
         if (productImage) {
-            // Upload image to Cloudinary
             const uploadedImage = await cloudinary.uploader.upload(productImage.path, {
                 folder: "products",
                 crop: "scale",
@@ -143,7 +139,6 @@ const updateProduct = async (req, res) => {
             updatedData.productImageUrl = uploadedImage.secure_url;
         }
 
-        // Find product and update
         const productId = req.params.id;
         const updatedProduct = await Products.findByIdAndUpdate(
             productId,
@@ -172,6 +167,7 @@ const updateProduct = async (req, res) => {
         });
     }
 };
+
 
 const deleteProduct = async (req, res) => {
     const productId = req.params.id;
@@ -219,33 +215,33 @@ const searchProducts = async (req, res) => {
     }
 };
 
-// const getCollegesOfferingCourse = async (req, res) => {
-//     const courseId = req.params.courseId;
+const getProductsWithCategoryId = async (req, res) => {
+    const categoryId = req.params.categoryId;
 
-//     try {
-//         // Fetch colleges that offer the course with the given ID
-//         const colleges = await Colleges.find({ coursesAvailable: courseId });
+    try {
+        // Fetch products that offer the category with the given ID
+        const products = await Products.find({ productCategory: categoryId });
 
-//         if (!colleges.length) {
-//             return res.json({
-//                 success: false,
-//                 message: "No colleges found for this course",
-//             });
-//         }
+        if (!products.length) {
+            return res.json({
+                success: false,
+                message: "No products found under this category",
+            });
+        }
 
-//         res.json({
-//             success: true,
-//             message: "Colleges fetched successfully",
-//             colleges: colleges,
-//         });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({
-//             success: false,
-//             message: "Internal server error",
-//         });
-//     }
-// };
+        res.json({
+            success: true,
+            message: "Products fetched successfully",
+            products: products,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
 
 
 module.exports = {
@@ -255,4 +251,5 @@ module.exports = {
     updateProduct,
     deleteProduct,
     searchProducts,
+    getProductsWithCategoryId
 };

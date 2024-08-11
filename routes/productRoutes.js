@@ -9,6 +9,8 @@ router.post('/create_product', productController.createProduct)
 router.put("/update_product/:id", productController.updateProduct)
 router.delete("/delete_product/:id", productController.deleteProduct)
 
+router.get('/getProductsWithCategoryId/:categoryId', productController.getProductsWithCategoryId);
+
 // router.post('/create_product', authGuardAdmin, productController.createProduct)
 // router.put("/update_product/:id", authGuardAdmin, productController.updateProduct)
 // router.delete("/delete_product/:id", authGuardAdmin, productController.deleteProduct)

@@ -16,7 +16,7 @@ const createUser = async (req, res) => {
     if (!fullName || !email || !password || !confirmPassword || !phoneNumber) {
         return res.json({
             success: false,
-            
+
             message: "Please enter all the fields.",
         });
     }
@@ -140,7 +140,7 @@ const resetPassword = async (req, res) => {
     const MailConfig = mailConfig();
 
     const mailOptions = {
-        from: 'Ecom', // Replace with your email
+        from: 'Lush Beauty',
         to: UserData?.email,
         subject: 'Password Reset Code',
         text: `Your password reset code is: ${OTP}`
@@ -152,7 +152,6 @@ const resetPassword = async (req, res) => {
             success: true,
             message: "Reset code email sent successfully!"
         })
-        // console.log('Reset code email sent successfully!');
     } catch (error) {
         console.log(error)
         return res.json({

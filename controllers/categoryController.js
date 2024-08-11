@@ -1,4 +1,3 @@
-const cloudinary = require("cloudinary");
 const Category = require("../models/categoryModel");
 
 // Create a new Category

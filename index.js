@@ -45,6 +45,9 @@ app.get("/test", (req, res) => {
 })
 
 app.use('/api/user', require('./routes/userRoutes'))
+app.use("/api/user", require("./routes/saveRoutes"));
+app.use('/api/products', require('./routes/productRoutes'))
+app.use('/api/category', require('./routes/categoryRoutes'))
 
 
 // defining port
