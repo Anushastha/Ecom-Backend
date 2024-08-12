@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const productController = require("../controllers/productControllers");
+const productController = require("../controllers/productController");
 // const {authGuardAdmin } = require('../middleware/authGuard');
 
 router.get("/get_products", productController.getProducts)
