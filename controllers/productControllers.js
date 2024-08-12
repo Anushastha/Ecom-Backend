@@ -243,6 +243,55 @@ const getProductsWithCategoryId = async (req, res) => {
     }
 };
 
+const createOrder = async (req, res) => {
+    console.log(req.body);
+    const { userId, productId, quantity } = req.body;
+
+    //validate data
+    if (!userId || !productId || !quantity) {
+        return res.json({
+            success: false,
+            message: "Please fill all the fields"
+        })
+    } try {
+        const newOrder = new Orders({
+            userId: userId,
+            productId: productId,
+            quantity: quantity,
+        })
+        await newOrder.save();
+        res.json({
+            success: true,
+            message: "Order created successfully",
+            product: newOrder
+        })
+    } catch (error) {
+        res.send(error)
+    }
+}
+
+const getOrders = async (req, res) => {
+    try {
+        const orders = await Orders.find({
+            $and: [
+                { "status": "pending" },
+                {
+                    "quantity": {
+                        $gt: 2      //gt = greater than....here, getting orders with quantity over 2
+                    }
+                }
+            ]
+        }).populate("userId")
+        res.json({
+            success: true,
+            message: "All orders fetched successfully",
+            product: orders
+        })
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 
 module.exports = {
     createProduct,
@@ -251,5 +300,7 @@ module.exports = {
     updateProduct,
     deleteProduct,
     searchProducts,
-    getProductsWithCategoryId
-};
+    getProductsWithCategoryId,
+    createOrder,
+    getOrders,
+}; 

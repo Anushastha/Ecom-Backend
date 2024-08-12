@@ -51,7 +51,7 @@ const getUserSaves = async (req, res) => {
     try {
         const save = await Save.findOne({ user: userId }).populate({
             path: "savedItems.product",
-            select: "productName productCategory productPrice",
+            select: "productName productImageUrl productCategory productPrice",
         });
 
         if (!save) {
