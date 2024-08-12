@@ -338,11 +338,14 @@ const updateUserProfile = async (req, res) => {
 
         // Update user fields
         const { fullName, email, phoneNumber } = req.body;
+
+        // Update user profile fields if they are provided
         if (fullName) user.fullName = fullName;
         if (email) user.email = email;
         if (phoneNumber) user.phoneNumber = phoneNumber;
 
-        if (req.files) {
+        // Check if a profile image is provided
+        if (req.files && req.files.profileImage) {
             const uploadedImage = await cloudinary.v2.uploader.upload(
                 req.files.profileImage.path,
                 {
@@ -352,12 +355,14 @@ const updateUserProfile = async (req, res) => {
             );
             user.profileImage = uploadedImage.secure_url;
         }
+
+        // Save the updated user profile
         await user.save();
 
-        // Respond with updated user profile
+        // Respond with the updated user profile
         res.status(200).json({
             success: true,
-            message: "User profile updated successfully",
+            message: req.files && req.files.profileImage ? "User profile updated successfully" : "User profile updated successfully",
             userProfile: {
                 fullName: user.fullName,
                 email: user.email,
@@ -373,6 +378,7 @@ const updateUserProfile = async (req, res) => {
         });
     }
 };
+
 
 
 module.exports = {

@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
- 
+
 const orderItemSchema = new mongoose.Schema({
     productId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -11,24 +11,31 @@ const orderItemSchema = new mongoose.Schema({
         required: true,
     }
 });
- 
+
+
+
 const orderSchema = new mongoose.Schema({
     orderId: {
         type: String,
         required: true,
-        default: () => "ORDER-NO" + Math.floor(Math.random() * 1000000)
+        default: () => "Order-No" + Math.floor(Math.random() * 1000000)
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "users",
         required: true,
     },
-    items: [orderItemSchema], // Using the subdocument schema for items
+    items: [orderItemSchema],
     status: {
         type: String,
         default: "pending"
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
 });
- 
+
+
 const Orders = mongoose.model('orders', orderSchema);
 module.exports = Orders;

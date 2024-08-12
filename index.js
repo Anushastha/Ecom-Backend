@@ -49,7 +49,7 @@ app.use("/api/user", require("./routes/saveRoutes"));
 app.use('/api/products', require('./routes/productRoutes'))
 app.use('/api/category', require('./routes/categoryRoutes'))
 app.use('/api/cart', require('./routes/cartRoutes'));
-app.use('/api/order', require('./routes/orderRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
 
 // defining port
 const PORT = process.env.PORT;

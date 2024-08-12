@@ -99,41 +99,63 @@ const removeFromCart = async (req, res) => {
 };
 
 const updateCartItemQuantity = async (req, res) => {
-    const cartItemId = req.params.id; 
+    const cartItemId = req.params.id;
     const { newQuantity } = req.body;
     try {
-      const cart = await Cart.findOneAndUpdate(
-        { "cartItems._id": cartItemId },
-        { $set: { "cartItems.$.quantity": newQuantity } },
-        { new: true }
-      );
-      if (!cart) {
-        return res.status(404).json({
-          success: false,
-          message: "Cart item not found",
+        const cart = await Cart.findOneAndUpdate(
+            { "cartItems._id": cartItemId },
+            { $set: { "cartItems.$.quantity": newQuantity } },
+            { new: true }
+        );
+        if (!cart) {
+            return res.status(404).json({
+                success: false,
+                message: "Cart item not found",
+            });
+        }
+        res.status(200).json({
+            success: true,
+            message: "Quantity updated successfully",
+            cartItem: cart.cartItems.id(cartItemId),
         });
-      }
-      res.status(200).json({
-        success: true,
-        message: "Quantity updated successfully",
-        cartItem: cart.cartItems.id(cartItemId),
-      });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to update quantity",
-      });
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to update quantity",
+        });
     }
-  };
-  
+};
 
+const clearCart = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: "User ID is required" });
+        }
+
+        const updatedCart = await Cart.updateOne(
+            { user: userId },
+            { $set: { cartItems: [] } }  // Clear the cart items
+        );
+
+        if (updatedCart.modifiedCount === 0) {
+            return res.status(404).json({ success: false, message: "Cart not found or already empty" });
+        }
+
+        res.status(200).json({ success: true, message: "Cart cleared successfully" });
+    } catch (err) {
+        res.status(500).json({ success: false, message: "Server error", error: err.message });
+    }
+};
 
 module.exports = {
     createCart,
     getUserCart,
     removeFromCart,
     updateCartItemQuantity,
+    clearCart
 };
 
 const mongoose = require("mongoose");
