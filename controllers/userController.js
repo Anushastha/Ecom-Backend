@@ -21,13 +21,6 @@ const createUser = async (req, res) => {
         });
     }
 
-    const nameRegex = /^[a-zA-Z\s]+$/;
-    if (!nameRegex.test(fullName)) {
-        return res.json({
-            success: false,
-            message: "Full name should not contain numbers or special characters.",
-        });
-    }
 
     // step 4 : try catch block
     try {
@@ -197,18 +190,39 @@ const verifyResetCode = async (req, res) => {
 
 const updatePassword = async (req, res) => {
     const { email, password } = req.body;
-    // console.log(email, password);
 
     try {
-        // Update the user's password
+        // Find the user by email
+        const user = await Users.findOne({ email });
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+
+        // Check if the new password is in the user's password history
+        const isReused = await user.isPasswordInHistory(password);
+        if (isReused) {
+            return res.json({
+                success: false,
+                message: "You cannot reuse a recent password. Please choose a different password.",
+            });
+        }
+
+        // If not reused, proceed to update the password
         const randomSalt = await bcrypt.genSalt(10);
         const encryptedPassword = await bcrypt.hash(password, randomSalt);
 
-        await Users.findOneAndUpdate({ email }, { password: encryptedPassword });
+        // Update the user's password and add it to the password history
+        user.password = encryptedPassword;
+        await user.updatePasswordHistory(password);
+        await user.save();
 
         return res.json({
             success: true,
-            message: "Password reset successfully."
+            message: "Password reset successfully.",
         });
 
     } catch (error) {
@@ -219,6 +233,8 @@ const updatePassword = async (req, res) => {
         });
     }
 };
+
+
 
 const getUsers = async (req, res) => {
     try {
@@ -378,7 +394,6 @@ const updateUserProfile = async (req, res) => {
         });
     }
 };
-
 
 
 module.exports = {
