@@ -6,6 +6,8 @@ const cors = require('cors');
 const cloudinary = require('cloudinary');
 var morgan = require('morgan')
 var acceptMultimedia = require('connect-multiparty')
+const session = require('express-session');
+const MongoStore = require('connect-mongo'); // For session storage in MongoDB
 
 // Making express app
 const app = express();
@@ -30,6 +32,18 @@ const corsOptions = {
     optionSuccessStatus: 200
 };
 app.use(cors(corsOptions))
+
+// session config
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: false,
+        store: MongoStore.create({ mongoUrl: process.env.DB_URL }),
+        cookie: { secure: false, httpOnly: true, maxAge: 30 * 60 * 1000 },
+    })
+);
+
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 

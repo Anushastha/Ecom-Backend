@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require("bcrypt")
+const bcrypt = require("bcrypt");
 
 const userSchema = mongoose.Schema({
     fullName: {
@@ -54,14 +54,14 @@ const userSchema = mongoose.Schema({
     failedLoginAttempts: {
         type: Number,
         default: 0,
-      },
-      isLocked: {
+    },
+    isLocked: {
         type: Boolean,
         default: false,
-      },
-      lockUntil: {
+    },
+    lockUntil: {
         type: Date,
-      },
+    },
 });
 
 // Method to compare a new password with history
@@ -73,12 +73,7 @@ userSchema.methods.isPasswordInHistory = async function (newPassword) {
     return false;
 };
 
-userSchema.methods.isPasswordExpired = function () {
-    const expiryDate = new Date(this.lastPasswordChange);
-    expiryDate.setDate(expiryDate.getDate() + this.passwordExpiry); // Add days to the last password change date
-    return new Date() > expiryDate;
-  };
-  
+
 // Method to hash and update password history
 userSchema.methods.updatePasswordHistory = async function (newPassword) {
     const salt = await bcrypt.genSalt(10);
@@ -89,12 +84,13 @@ userSchema.methods.updatePasswordHistory = async function (newPassword) {
 
     // Limit history to last 5 passwords
     if (this.passwordHistory.length > 5) {
-        this.passwordHistory.pop(); // Remove the oldest password
+        this.passwordHistory.shift(); // Remove the oldest password
     }
 
     // Update current password
     this.password = hashedPassword;
 };
+
 
 // Method to check if the account is locked
 userSchema.methods.isAccountLocked = function () {

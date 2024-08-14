@@ -13,7 +13,7 @@ router.post('/update_password', userController.updatePassword);
 router.post('/expired_password_change', userController.expiredPasswordChange);
 
 router.post('/change_password', authGuard, userController.changePassword);
-router.get("/get_profile", userController.getUserProfile);
+router.get("/get_profile", authGuard, userController.getUserProfile);
 router.put("/update_profile/:id", authGuard, userController.updateUserProfile);
 
 

@@ -200,8 +200,6 @@ const verifyResetCode = async (req, res) => {
 };
 
 
-// 
-
 
 const getUsers = async (req, res) => {
     try {
@@ -291,8 +289,16 @@ const changePassword = async (req, res) => {
             return res.status(400).json({ message: 'Current password is incorrect' });
         }
 
+        const isReused = await user.isPasswordInHistory(newPassword);
+        if (isReused) {
+            return res.status(400).json({ message: 'You cannot reuse a recent password. Please choose a different password.' });
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        // Add the current password to the password history
+        user.passwordHistory.push(user.password);
 
         user.password = hashedPassword;
         user.lastPasswordChange = Date.now(); // Update the last password change date
@@ -308,6 +314,7 @@ const updatePassword = async (req, res) => {
     const { email, password } = req.body;
 
     try {
+        // Find the user by email
         const user = await Users.findOne({ email });
 
         if (!user) {
@@ -326,11 +333,13 @@ const updatePassword = async (req, res) => {
             });
         }
 
+        // If not reused, proceed to update the password
         const randomSalt = await bcrypt.genSalt(10);
         const encryptedPassword = await bcrypt.hash(password, randomSalt);
 
+        // Update the user's password and add it to the password history
         user.password = encryptedPassword;
-        user.lastPasswordChange = Date.now(); // Update the last password change date
+        await user.updatePasswordHistory(password);
         await user.save();
 
         return res.json({
@@ -346,6 +355,7 @@ const updatePassword = async (req, res) => {
         });
     }
 };
+
 
 
 
