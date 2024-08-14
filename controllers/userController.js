@@ -289,18 +289,20 @@ const changePassword = async (req, res) => {
             return res.status(400).json({ message: 'Current password is incorrect' });
         }
 
+        // Check if the new password is in the password history
         const isReused = await user.isPasswordInHistory(newPassword);
         if (isReused) {
             return res.status(400).json({ message: 'You cannot reuse a recent password. Please choose a different password.' });
         }
 
+        // Hash the new password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-        // Add the current password to the password history
-        user.passwordHistory.push(user.password);
+        // Update the user's password history
+        await user.updatePasswordHistory(newPassword);
 
-        user.password = hashedPassword;
+        // Save the updated user document
         user.lastPasswordChange = Date.now(); // Update the last password change date
         await user.save();
 
@@ -309,6 +311,7 @@ const changePassword = async (req, res) => {
         res.status(500).json({ message: 'Server error', error });
     }
 };
+
 
 const updatePassword = async (req, res) => {
     const { email, password } = req.body;
