@@ -61,47 +61,56 @@ const createUser = async (req, res) => {
 
 //Login User
 const loginUser = async (req, res) => {
-    // step 1: Check incomming data
-    console.log(req.body);
-
-    // destructuring
     const { email, password } = req.body;
 
-    // validation
     if (!email || !password) {
         return res.json({
             success: false,
             message: "Please enter all fields.",
         });
     }
-    // try catch block
+
     try {
-        // finding user
         const user = await Users.findOne({ email: email });
+
         if (!user) {
             return res.json({
                 success: false,
-                message: "User does not exists.",
+                message: "User does not exist.",
             });
         }
-        // Comparing password
-        const databasePassword = user.password;
-        const isMatched = await bcrypt.compare(password, databasePassword);
+
+        if (user.isAccountLocked()) {
+            return res.json({
+                success: false,
+                message: "Your account is locked due to multiple failed login attempts. Please try again in 1 minute.",
+                lockUntil: user.lockUntil // Send lockUntil for client-side timer
+            });
+        }
+
+        const isMatched = await bcrypt.compare(password, user.password);
 
         if (!isMatched) {
+            await user.handleFailedLoginAttempt();
+
             return res.json({
                 success: false,
                 message: "Invalid Credentials.",
             });
         }
 
-        // generate token token
+        // If the account was previously locked and is now unlocked, we need to ensure the save operation finishes
+        if (user.isLocked || user.failedLoginAttempts > 0) {
+            user.failedLoginAttempts = 0;
+            user.isLocked = false;
+            user.lockUntil = null;
+            await user.save(); // Ensure this save operation is awaited
+        }
         const token = jwt.sign(
             { id: user._id, isAdmin: user.isAdmin },
             process.env.JWT_SECRET
         );
 
-        // response
         res.status(200).json({
             success: true,
             message: "Logged in successfully.",
@@ -117,6 +126,9 @@ const loginUser = async (req, res) => {
         });
     }
 };
+
+
+
 
 const resetPassword = async (req, res) => {
     const UserData = req.body;
@@ -188,52 +200,7 @@ const verifyResetCode = async (req, res) => {
 };
 
 
-const updatePassword = async (req, res) => {
-    const { email, password } = req.body;
-
-    try {
-        // Find the user by email
-        const user = await Users.findOne({ email });
-
-        if (!user) {
-            return res.json({
-                success: false,
-                message: "User not found.",
-            });
-        }
-
-        // Check if the new password is in the user's password history
-        const isReused = await user.isPasswordInHistory(password);
-        if (isReused) {
-            return res.json({
-                success: false,
-                message: "You cannot reuse a recent password. Please choose a different password.",
-            });
-        }
-
-        // If not reused, proceed to update the password
-        const randomSalt = await bcrypt.genSalt(10);
-        const encryptedPassword = await bcrypt.hash(password, randomSalt);
-
-        // Update the user's password and add it to the password history
-        user.password = encryptedPassword;
-        await user.updatePasswordHistory(password);
-        await user.save();
-
-        return res.json({
-            success: true,
-            message: "Password reset successfully.",
-        });
-
-    } catch (error) {
-        console.log(error);
-        return res.json({
-            success: false,
-            message: 'Server Error: ' + error.message,
-        });
-    }
-};
-
+// 
 
 
 const getUsers = async (req, res) => {
@@ -264,6 +231,45 @@ const getSingleUser = async (req, res) => {
     }
 };
 
+const expiredPasswordChange = async (req, res) => {
+    const { oldPassword, newPassword, confirmNewPassword } = req.body;
+
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({ message: 'New passwords do not match' });
+    }
+
+    try {
+        const user = await Users.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.isPasswordExpired()) {
+            const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Old password is incorrect' });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+            user.password = hashedPassword;
+            user.lastPasswordChange = Date.now(); // Update the last password change date
+            await user.save();
+
+            res.status(200).json({ message: 'Password changed successfully' });
+        } else {
+            return res.status(400).json({ message: 'Password has not expired. Please use the regular password change.' });
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error });
+    }
+};
+
+
 
 const changePassword = async (req, res) => {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
@@ -289,6 +295,7 @@ const changePassword = async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
         user.password = hashedPassword;
+        user.lastPasswordChange = Date.now(); // Update the last password change date
         await user.save();
 
         res.status(200).json({ message: 'Password changed successfully' });
@@ -296,6 +303,50 @@ const changePassword = async (req, res) => {
         res.status(500).json({ message: 'Server error', error });
     }
 };
+
+const updatePassword = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const user = await Users.findOne({ email });
+
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found.",
+            });
+        }
+
+        // Check if the new password is in the user's password history
+        const isReused = await user.isPasswordInHistory(password);
+        if (isReused) {
+            return res.json({
+                success: false,
+                message: "You cannot reuse a recent password. Please choose a different password.",
+            });
+        }
+
+        const randomSalt = await bcrypt.genSalt(10);
+        const encryptedPassword = await bcrypt.hash(password, randomSalt);
+
+        user.password = encryptedPassword;
+        user.lastPasswordChange = Date.now(); // Update the last password change date
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: "Password reset successfully.",
+        });
+
+    } catch (error) {
+        console.log(error);
+        return res.json({
+            success: false,
+            message: 'Server Error: ' + error.message,
+        });
+    }
+};
+
 
 
 const getUserProfile = async (req, res) => {
@@ -401,6 +452,7 @@ module.exports = {
     loginUser,
     resetPassword,
     verifyResetCode,
+    expiredPasswordChange,
     updatePassword,
     getUsers,
     getSingleUser,

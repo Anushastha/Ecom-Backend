@@ -42,7 +42,26 @@ const userSchema = mongoose.Schema({
                 default: Date.now,
             }
         }
-    ]
+    ],
+    lastPasswordChange: {
+        type: Date,
+        default: Date.now,
+    },
+    passwordExpiry: {
+        type: Number,  // Store the expiry in days
+        default: 90
+    },
+    failedLoginAttempts: {
+        type: Number,
+        default: 0,
+      },
+      isLocked: {
+        type: Boolean,
+        default: false,
+      },
+      lockUntil: {
+        type: Date,
+      },
 });
 
 // Method to compare a new password with history
@@ -54,6 +73,12 @@ userSchema.methods.isPasswordInHistory = async function (newPassword) {
     return false;
 };
 
+userSchema.methods.isPasswordExpired = function () {
+    const expiryDate = new Date(this.lastPasswordChange);
+    expiryDate.setDate(expiryDate.getDate() + this.passwordExpiry); // Add days to the last password change date
+    return new Date() > expiryDate;
+  };
+  
 // Method to hash and update password history
 userSchema.methods.updatePasswordHistory = async function (newPassword) {
     const salt = await bcrypt.genSalt(10);
@@ -69,6 +94,33 @@ userSchema.methods.updatePasswordHistory = async function (newPassword) {
 
     // Update current password
     this.password = hashedPassword;
+};
+
+// Method to check if the account is locked
+userSchema.methods.isAccountLocked = function () {
+    if (this.isLocked && this.lockUntil > Date.now()) {
+        return true;
+    } else if (this.isLocked && this.lockUntil <= Date.now()) {
+        // Unlock account after lockout period
+        this.isLocked = false;
+        this.failedLoginAttempts = 0;
+        this.lockUntil = null;
+        this.save(); // Save the changes
+        return false;
+    }
+    return false;
+};
+
+// Method to handle failed login attempts
+userSchema.methods.handleFailedLoginAttempt = async function () {
+    this.failedLoginAttempts += 1;
+
+    if (this.failedLoginAttempts >= 5) {
+        this.isLocked = true;
+        this.lockUntil = new Date(Date.now() + 1 * 60 * 1000); // Lock for 1 minute
+    }
+
+    await this.save(); // Save the changes
 };
 
 const Users = mongoose.model('users', userSchema);
