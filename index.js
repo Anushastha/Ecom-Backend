@@ -33,14 +33,14 @@ const corsOptions = {
 };
 app.use(cors(corsOptions))
 
-// session config
+// // session config
 app.use(
     session({
         secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
         store: MongoStore.create({ mongoUrl: process.env.DB_URL }),
-        cookie: { secure: false, httpOnly: true, maxAge: 30 * 60 * 1000 },
+        cookie: { secure: false, httpOnly: true, maxAge: 30 * 24 * 60 * 60 * 1000 },
     })
 );
 

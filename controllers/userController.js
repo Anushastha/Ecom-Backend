@@ -106,9 +106,13 @@ const loginUser = async (req, res) => {
             user.lockUntil = null;
             await user.save(); // Ensure this save operation is awaited
         }
+
+        await user.updateLastActivity();
+
         const token = jwt.sign(
             { id: user._id, isAdmin: user.isAdmin },
-            process.env.JWT_SECRET
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' }
         );
 
         res.status(200).json({
@@ -126,8 +130,6 @@ const loginUser = async (req, res) => {
         });
     }
 };
-
-
 
 
 const resetPassword = async (req, res) => {

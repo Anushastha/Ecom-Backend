@@ -62,7 +62,12 @@ const userSchema = mongoose.Schema({
     lockUntil: {
         type: Date,
     },
+    lastActivity: {
+        type: Date,
+        default: Date.now,
+    },
 });
+
 
 // Method to compare a new password with history
 userSchema.methods.isPasswordInHistory = async function (newPassword) {
@@ -72,7 +77,6 @@ userSchema.methods.isPasswordInHistory = async function (newPassword) {
     }
     return false;
 };
-
 
 // Method to hash and update password history
 userSchema.methods.updatePasswordHistory = async function (newPassword) {
@@ -90,7 +94,6 @@ userSchema.methods.updatePasswordHistory = async function (newPassword) {
     // Update current password
     this.password = hashedPassword;
 };
-
 
 // Method to check if the account is locked
 userSchema.methods.isAccountLocked = function () {
@@ -117,6 +120,12 @@ userSchema.methods.handleFailedLoginAttempt = async function () {
     }
 
     await this.save(); // Save the changes
+};
+
+// Update last activity time on each request
+userSchema.methods.updateLastActivity = function () {
+    this.lastActivity = Date.now();
+    return this.save();
 };
 
 const Users = mongoose.model('users', userSchema);
