@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary");
 const { resetCode, mailConfig } = require("../utils/resetPassword");
 const ResetCode = require("../models/resetCodeModel");
+const EmailVerifyCode = require("../models/verifyRegistration");
 
 const createUser = async (req, res) => {
     // step 1 : Check if data is coming or not
@@ -46,18 +47,83 @@ const createUser = async (req, res) => {
             password: encryptedPassword,
             confirmPassword: encryptedPassword,
         });
+        // Generate verification code
+        const verificationCode = Math.floor(1000 + Math.random() * 9000);
+        const emailVerificationCode = new EmailVerifyCode({
+            userId: newUser._id,
+            emailVerifyCode: verificationCode
+        });
+
+        // Save verification code
+        await emailVerificationCode.save();
+
+        // Send email with verification code
+        const mailOptions = {
+            from: 'LushBeauty',
+            to: email,
+            subject: 'Email Verification Code',
+            text: `Your email verification code is: ${verificationCode}`
+        };
+
+        const transporter = mailConfig();
+        await transporter.sendMail(mailOptions);
 
         // step 7 : save user and response
         await newUser.save();
         res.status(200).json({
             success: true,
-            message: "User created successfully.",
+            message: "Verification code sent. Please check your email.",
         });
     } catch (error) {
         console.log(error);
         res.status(500).json("Server Error");
     }
 };
+
+const verifyEmailCode = async (req, res) => {
+    const { verificationCode, email } = req.body;
+
+    try {
+        // Find the user by email
+        const user = await Users.findOne({ email });
+        if (!user) {
+            return res.json({
+                success: false,
+                message: "User not found."
+            });
+        }
+
+        // Find the verification code associated with the user
+        const savedVerificationCode = await EmailVerifyCode.findOne({ userId: user._id });
+
+        // Check if the saved verification code exists and matches the input
+        if (!savedVerificationCode || savedVerificationCode.emailVerifyCode !== parseInt(verificationCode, 10)) {
+            return res.json({
+                success: false,
+                message: "Invalid verification code."
+            });
+        }
+
+        // Mark the email as verified
+        user.isEmailVerified = true;
+        await user.save();
+
+        // Remove the verification code after successful verification
+        await EmailVerifyCode.findOneAndDelete({ userId: user._id });
+
+        return res.json({
+            success: true,
+            message: "Email verified successfully. Registration complete."
+        });
+    } catch (error) {
+        console.error("Error in verifyEmailCode:", error);
+        return res.json({
+            success: false,
+            message: 'Server Error. Please try again later.',
+        });
+    }
+};
+
 
 //Login User
 const loginUser = async (req, res) => {
@@ -464,6 +530,7 @@ const updateUserProfile = async (req, res) => {
 
 module.exports = {
     createUser,
+    verifyEmailCode,
     loginUser,
     resetPassword,
     verifyResetCode,

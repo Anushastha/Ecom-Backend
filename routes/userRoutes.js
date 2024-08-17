@@ -11,6 +11,7 @@ router.post('/reset_password', userController.resetPassword);
 router.post('/reset_code', userController.verifyResetCode);
 router.post('/update_password', userController.updatePassword);
 router.post('/expired_password_change', userController.expiredPasswordChange);
+router.post('/email_code', userController.verifyEmailCode);
 
 router.post('/change_password', authGuard, userController.changePassword);
 router.get("/get_profile", authGuard, userController.getUserProfile);

@@ -66,6 +66,12 @@ const userSchema = mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    isEmailVerified: {
+        type: Boolean,
+        default: false,
+    },
+
+
 });
 
 
