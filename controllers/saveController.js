@@ -91,6 +91,7 @@ const removeFromSaves = async (req, res) => {
             });
         }
 
+        await logUserAction(save.user, 'Remove from Wishlist', `User removed product from wishlist`);
         res.status(200).json({
             success: true,
             message: "Product removed from wishlist successfully",

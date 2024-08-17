@@ -1,6 +1,7 @@
 const Cart = require("../models/cartModel");
 const Orders = require("../models/orderModel");
 const Users = require("../models/userModel");
+const { logUserAction } = require('../services/loggerServices');
 
 // Create a new order
 const createOrderInfo = async (req, res) => {
@@ -69,7 +70,7 @@ const getOrdersByUserId = async (req, res) => {
         if (!orders.length) {
             return res.status(404).json({ success: false, message: "No orders found for this user" });
         }
-
+        await logUserAction(userId, 'View Order History', `User viewd their order history`);
         res.status(200).json({ success: true, message: "Orders fetched successfully", orders });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server error", error: error.message });
