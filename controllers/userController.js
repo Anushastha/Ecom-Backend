@@ -5,6 +5,7 @@ const cloudinary = require("cloudinary");
 const { resetCode, mailConfig } = require("../utils/resetPassword");
 const ResetCode = require("../models/resetCodeModel");
 const EmailVerifyCode = require("../models/verifyRegistration");
+const { logUserAction } = require('../services/loggerServices');
 
 const createUser = async (req, res) => {
     // step 1 : Check if data is coming or not
@@ -21,7 +22,6 @@ const createUser = async (req, res) => {
             message: "Please enter all the fields.",
         });
     }
-
 
     // step 4 : try catch block
     try {
@@ -68,6 +68,7 @@ const createUser = async (req, res) => {
         const transporter = mailConfig();
         await transporter.sendMail(mailOptions);
 
+
         // step 7 : save user and response
         await newUser.save();
         res.status(200).json({
@@ -111,6 +112,7 @@ const verifyEmailCode = async (req, res) => {
         // Remove the verification code after successful verification
         await EmailVerifyCode.findOneAndDelete({ userId: user._id });
 
+        await logUserAction(user._id, 'Create New Account', `User created a new account`);
         return res.json({
             success: true,
             message: "Email verified successfully. Registration complete."
@@ -143,6 +145,13 @@ const loginUser = async (req, res) => {
             return res.json({
                 success: false,
                 message: "User does not exist.",
+            });
+        }
+
+        if (!user.isEmailVerified) {
+            return res.status(403).json({
+                success: false,
+                message: "Please verify your email before logging in.",
             });
         }
 
@@ -181,6 +190,7 @@ const loginUser = async (req, res) => {
             { expiresIn: '30d' }
         );
 
+        await logUserAction(user._id, 'Login', `User logged in successfully`);
         res.status(200).json({
             success: true,
             message: "Logged in successfully.",
@@ -252,6 +262,7 @@ const verifyResetCode = async (req, res) => {
                     message: "Invalid reset code."
                 });
             } else {
+                logger.info('Reset code verified successfully', { email });
                 return res.json({
                     success: true,
                     message: "Reset code verified successfully."
@@ -373,7 +384,7 @@ const changePassword = async (req, res) => {
         // Save the updated user document
         user.lastPasswordChange = Date.now(); // Update the last password change date
         await user.save();
-
+        await logUserAction(user._id, 'Changed Password', `User changed their password`);
         res.status(200).json({ message: 'Password changed successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error });
@@ -413,6 +424,7 @@ const updatePassword = async (req, res) => {
         await user.updatePasswordHistory(password);
         await user.save();
 
+        await logUserAction(user._id, 'Password Reset', `User reset their password`);
         return res.json({
             success: true,
             message: "Password reset successfully.",
@@ -445,6 +457,7 @@ const getUserProfile = async (req, res) => {
                 message: "User not found",
             });
         }
+        await logUserAction(user._id, 'View Profile', `User viewed their profile`);
         res.status(200).json({
             success: true,
             message: "User profile retrieved successfully",
@@ -507,6 +520,7 @@ const updateUserProfile = async (req, res) => {
         // Save the updated user profile
         await user.save();
 
+        await logUserAction(user._id, 'Profile Update', `User updated their profile`);
         // Respond with the updated user profile
         res.status(200).json({
             success: true,

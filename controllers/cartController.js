@@ -1,6 +1,7 @@
 
 const Cart = require("../models/cartModel");
 const User = require("../models/userModel");
+const { logUserAction } = require('../services/loggerServices');
 
 const createCart = async (req, res) => {
     try {
@@ -31,6 +32,8 @@ const createCart = async (req, res) => {
         cart.cartItems.push({ product: productId, quantity });
 
         await cart.save();
+        await logUserAction(userId, 'Add to Cart', `User added a product to their cart`);
+
         res.status(200).json({
             success: true,
             message: "Product added to cart successfully",
@@ -58,6 +61,7 @@ const getUserCart = async (req, res) => {
                 cart: [],
             });
         }
+        await logUserAction(userId, 'View Cart', `User viewed their cart`);
         res.json({
             success: true,
             message: "User cart fetched successfully",
@@ -84,10 +88,12 @@ const removeFromCart = async (req, res) => {
                 message: "Item not found in cart",
             });
         }
+        await logUserAction(cart.user, 'Remove from Cart', `User removed product from their cart`);
+
         res.status(200).json({
             success: true,
             message: "Item removed from cart successfully",
-            cart: cart.cartItems, // Return updated cart items
+            cart: cart.cartItems,
         });
     } catch (error) {
         console.error(error);
@@ -113,6 +119,8 @@ const updateCartItemQuantity = async (req, res) => {
                 message: "Cart item not found",
             });
         }
+        await logUserAction(cart.user, 'Updated cart item', `User updated their cart item`);
+
         res.status(200).json({
             success: true,
             message: "Quantity updated successfully",

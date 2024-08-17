@@ -1,5 +1,6 @@
 const Save = require("../models/saveModel");
 const User = require("../models/userModel");
+const { logUserAction } = require('../services/loggerServices');
 
 const addToSaved = async (req, res) => {
     try {
@@ -30,8 +31,9 @@ const addToSaved = async (req, res) => {
         }
 
         save.savedItems.push({ product: productId });
-
         await save.save();
+        await logUserAction(userId, 'Add to Wishlist', `User added a product to wishlist`);
+
         res.status(201).json({
             success: true,
             message: "Product saved successfully!",
@@ -61,7 +63,7 @@ const getUserSaves = async (req, res) => {
                 save: [],
             });
         }
-
+        await logUserAction(userId, 'View Wishlist', 'User viewed their wishlist');
         res.json({
             success: true,
             message: "User's wishlist fetched successfully",
