@@ -9,7 +9,7 @@ const { logUserAction } = require('../services/loggerServices');
 
 const createUser = async (req, res) => {
     // step 1 : Check if data is coming or not
-    console.log(req.body);
+    //console.log(req.body);
 
     // step 2 : Destructure the data
     const { fullName, email, password, confirmPassword, phoneNumber } = req.body;
@@ -76,7 +76,7 @@ const createUser = async (req, res) => {
             message: "Verification code sent. Please check your email.",
         });
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.status(500).json("Server Error");
     }
 };
@@ -93,7 +93,6 @@ const verifyEmailCode = async (req, res) => {
                 message: "User not found."
             });
         }
-
         // Find the verification code associated with the user
         const savedVerificationCode = await EmailVerifyCode.findOne({ userId: user._id });
 
@@ -104,14 +103,11 @@ const verifyEmailCode = async (req, res) => {
                 message: "Invalid verification code."
             });
         }
-
         // Mark the email as verified
         user.isEmailVerified = true;
         await user.save();
-
         // Remove the verification code after successful verification
         await EmailVerifyCode.findOneAndDelete({ userId: user._id });
-
         await logUserAction(user._id, 'Create New Account', `User created a new account`);
         return res.json({
             success: true,
@@ -198,7 +194,7 @@ const loginUser = async (req, res) => {
             userData: user,
         });
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.json({
             success: false,
             message: "Server Error",
@@ -210,16 +206,16 @@ const loginUser = async (req, res) => {
 
 const resetPassword = async (req, res) => {
     const UserData = req.body;
-    console.log(UserData)
+    //console.log(UserData)
     const user = await Users.findOne({ email: UserData?.email });
     const OTP = resetCode;
-    console.log(OTP);
+    //console.log(OTP);
     await ResetCode.findOneAndUpdate({
         userId: user.id
     }, {
         resetCode: OTP
     }, { upsert: true })
-    console.log(user);
+    //console.log(user);
     const MailConfig = mailConfig();
 
     const mailOptions = {
@@ -236,7 +232,7 @@ const resetPassword = async (req, res) => {
             message: "Reset code email sent successfully!"
         })
     } catch (error) {
-        console.log(error)
+        //console.log(error)
         return res.json({
             success: false,
             message: 'Error sending reset code email:' + error.message,
@@ -262,7 +258,6 @@ const verifyResetCode = async (req, res) => {
                     message: "Invalid reset code."
                 });
             } else {
-                logger.info('Reset code verified successfully', { email });
                 return res.json({
                     success: true,
                     message: "Reset code verified successfully."
@@ -289,7 +284,7 @@ const getUsers = async (req, res) => {
             products: allUsers,
         });
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.send("Internal server error");
     }
 };
@@ -303,7 +298,7 @@ const getSingleUser = async (req, res) => {
             product: singleUser,
         });
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.send("Internal server error");
     }
 };
@@ -431,7 +426,7 @@ const updatePassword = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         return res.json({
             success: false,
             message: 'Server Error: ' + error.message,

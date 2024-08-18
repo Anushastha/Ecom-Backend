@@ -70,7 +70,7 @@ app.use('/api/orders', require('./routes/orderRoutes'));
 const PORT = process.env.PORT;
 // run the server
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`)
+    //console.log(`Server is running on port ${PORT}`)
 })
 
 module.exports = app;

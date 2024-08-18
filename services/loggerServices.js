@@ -10,7 +10,7 @@ const logUserAction = async (userId, action, details) => {
         });
 
         await newLog.save();
-        console.log('Log saved successfully');
+        //console.log('Log saved successfully');
     } catch (error) {
         console.error('Error saving log:', error);
     }

@@ -25,7 +25,7 @@ const createOrderInfo = async (req, res) => {
         });
 
         const savedOrder = await newOrder.save();
-        console.log("Order saved to database:", savedOrder); // Log the saved order
+        //console.log("Order saved to database:", savedOrder); // Log the saved order
         res.status(201).json({ success: true, message: "Order placed successfully", order: savedOrder });
     } catch (err) {
         console.error("Error creating order:", err);
